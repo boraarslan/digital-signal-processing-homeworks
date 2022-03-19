@@ -10,3 +10,4 @@ image = "0.24.1"
 poloto = "8.0.2"
 anyhow = "1.0.56"
 clap = {version = "3.1.6" , features = ["derive"]}
+num = "0.4.0"

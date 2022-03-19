@@ -2,9 +2,10 @@ use std::{collections::BTreeMap, fs::File, io::Write};
 
 use anyhow::Result;
 
-use image::io::Reader as ImageReader;
-use poloto::{plotnum::PlotNum, prelude::*, Plotter};
 use clap::Parser;
+use image::io::Reader as ImageReader;
+use num::pow;
+use poloto::{plotnum::PlotNum, prelude::*, Plotter};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -29,13 +30,12 @@ fn main() -> Result<()> {
         let (x, y) = img.dimensions();
         x * y
     };
-    let mut pixel_data = Vec::new();
+    let mut pixel_data: Vec<i128> = Vec::new();
     let mut pmf_data = Vec::new();
     let mut pmf_map = BTreeMap::new();
 
     for (_, _, color) in img.enumerate_pixels() {
         *pmf_map.entry(bin(args.bin, color[0].into())).or_insert(0) += 1;
-        
     }
 
     for idx in 0..=255 {
@@ -43,8 +43,23 @@ fn main() -> Result<()> {
         pmf_data.push(*pmf_map.get(&(idx as usize)).unwrap_or(&0) as f64 / total_pixels as f64);
     }
 
+    let mut average = 0;
+    for (idx, val) in pixel_data.iter().enumerate() {
+        average += val * idx as i128;
+    }
+    let average = average as f64 / total_pixels as f64;
+
+    let mut deviation: f64 = 0.0;
+    for (idx, val) in pixel_data.iter().enumerate() {
+        deviation += pow(idx as f64 - average, 2) * *val as f64;
+    }
+    let deviation = deviation / total_pixels as f64;
+
     draw_pixel_histogram(pixel_data, &file_name)?;
     draw_pmf_histogram(pmf_data, &file_name)?;
+
+    println!("The average is: {average}");
+    println!("The standard deviation is: {deviation}");
 
     Ok(())
 }

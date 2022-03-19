@@ -9,12 +9,17 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    #[clap(default_value = "cat")]
-    file_name: String,
+    /// File path to the image
+    #[clap(long, default_value = "cat")]
+    file: String,
+    /// BIN value to use
+    #[clap(long, default_value = "1")]
+    bin: usize,
 }
 
 fn main() -> Result<()> {
-    let file_name = Args::parse().file_name;
+    let args = Args::parse();
+    let file_name = args.file;
     let img = ImageReader::open(format!("images/{file_name}.bmp"))?
         .decode()?
         .grayscale()
@@ -29,18 +34,23 @@ fn main() -> Result<()> {
     let mut pmf_map = BTreeMap::new();
 
     for (_, _, color) in img.enumerate_pixels() {
-        *pmf_map.entry(color[0]).or_insert(0) += 1;
+        *pmf_map.entry(bin(args.bin, color[0].into())).or_insert(0) += 1;
+        
     }
 
     for idx in 0..=255 {
-        pixel_data.push(*pmf_map.get(&(idx as u8)).unwrap_or(&0));
-        pmf_data.push(*pmf_map.get(&(idx as u8)).unwrap_or(&0) as f64 / total_pixels as f64);
+        pixel_data.push(*pmf_map.get(&(idx as usize)).unwrap_or(&0));
+        pmf_data.push(*pmf_map.get(&(idx as usize)).unwrap_or(&0) as f64 / total_pixels as f64);
     }
 
     draw_pixel_histogram(pixel_data, &file_name)?;
     draw_pmf_histogram(pmf_data, &file_name)?;
 
     Ok(())
+}
+
+fn bin(bin_val: usize, value: usize) -> usize {
+    value / bin_val
 }
 
 fn draw_pixel_histogram(data: Vec<i128>, name: &str) -> Result<()> {
@@ -80,12 +90,13 @@ fn prepare_svg<T: PlotNum + poloto::plotnum::HasDefaultTicks + 'static>(
     x_axis: String,
     y_axis: String,
 ) -> Plotter<impl poloto::Disp> {
+    let step = data.len() / 10;
     let pmf_data = poloto::data()
         .histogram(histogram_name, (0..).zip(data.into_iter()))
         .build();
     let canvas = poloto::canvas().build();
 
-    let (xtick, xtick_fmt) = poloto::ticks_from_iter((0..).step_by(25));
+    let (xtick, xtick_fmt) = poloto::ticks_from_iter((0..).step_by(step));
     let (ytick, ytick_fmt) = poloto::ticks_from_default(pmf_data.boundy(&canvas));
     let pp = pmf_data.stage_with(canvas).plot_with(
         xtick,

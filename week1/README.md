@@ -9,15 +9,33 @@ By default program constructs output using the `cat.bmp` image located in the `/
 ```
 cargo run --release
 ```
-If you want to run with a different image add the image in the `/images` folder and give the name of the image as arguement (without file format).
+To run with options:
 
 ```
-cargo run --release -- <image_name>
+cargo run --release -- <OPTIONS>
 ```
 For example to run the code with the dog image:
 
 ```
-cargo run --release -- dog
+cargo run --release -- --file dog
+```
+
+For the help message:
+```
+cargo run --release -- --help
+```
+
+```
+week1 0.1.0
+
+USAGE:
+    week1 [OPTIONS]
+
+OPTIONS:
+        --bin <BIN>      [default: 1]
+        --file <FILE>    [default: cat]
+    -h, --help           Print help information
+    -V, --version        Print version information
 ```
 
 ### Example

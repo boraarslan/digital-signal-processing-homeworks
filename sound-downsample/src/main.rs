@@ -19,6 +19,8 @@ enum TargetKhz {
     Twelve = 12,
     Sixteen = 16,
     Thirtytwo = 32,
+    Fortyeight = 48,
+    Sixtyfour = 64,
 }
 
 fn main() {
@@ -26,11 +28,11 @@ fn main() {
     let mut sample = hound::WavReader::open(format!("assets/{}.wav", args.file)).unwrap();
 
     if sample.spec().channels != 1 {
-        panic!("Audio is not mono!")
+        panic!("Audio is not mono!");
     }
     
-    if sample.spec().bits_per_sample != 8 {
-        panic!("BPS is not 8!")
+    if ((sample.spec().sample_rate / 1000) % args.target_khz as u32) != 0 {
+        panic!("Can't divide sample rate to target khz!");
     }
 
     let spec = hound::WavSpec {
@@ -44,9 +46,9 @@ fn main() {
 
     let mut writer = hound::WavWriter::create(format!("assets/{}_downsample.wav", args.file ), spec).unwrap();
 
-    for (index, data) in sample.samples::<i8>().enumerate() {
-        if index % ( sample_rate / 1000 ) / args.target_khz as usize == 0 {
-            writer.write_sample(data.unwrap()).unwrap();
+    for (index, data) in sample.samples::<i32>().enumerate() {
+        if index % (( sample_rate / 1000 ) / args.target_khz as usize) == 0 {
+            writer.write_sample(data.as_ref().unwrap().clone()).unwrap();
         }
     }
 }
